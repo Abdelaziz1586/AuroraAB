@@ -1,0 +1,5 @@
+name: Aurora
+version: '1.2'
+main: aurora.aurora.AuroraBungeeCord
+author: Binkie, OmarOmar93
+description: No more bots.

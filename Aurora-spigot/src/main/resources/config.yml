@@ -1,0 +1,10 @@
+reconnect-message: '&bAurora%nl%&6Please Reconnect.'
+blocked-message: '&bAurora%nl%&4Your IP has been blocked.'
+illegal-characters-message: '&bAurora%nl%&cName Contains Illegal Characters.'
+proxy-blocked-message: '&bAurora%nl%&cVPN/Proxy Detected.'
+blocked-country-message: '&bAurora%nl%&cYour Country Is Blocked.'
+proxy-detections: true
+command-permission: aurora.admin
+console-filter: true
+blocked-countries:
+  - Template
