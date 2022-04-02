@@ -75,7 +75,7 @@ public final class AuroraSpigot extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
-        sendConsoleMessage("§bAurora §cHas Been Unloadd");
+        sendConsoleMessage("§bAurora §cHas Been Unloaded");
     }
 
     @EventHandler
