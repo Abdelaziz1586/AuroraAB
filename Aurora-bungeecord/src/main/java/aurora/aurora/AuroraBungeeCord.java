@@ -94,7 +94,7 @@ public final class AuroraBungeeCord extends Plugin implements Listener {
 
     @Override
     public void onDisable() {
-        getLogger().info("&bAurora &cHas Been Unloaded");
+        getLogger().info("&bAurora &cHas Been Unloadd");
     }
 
     @EventHandler
