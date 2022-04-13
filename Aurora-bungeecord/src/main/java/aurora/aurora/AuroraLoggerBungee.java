@@ -1,10 +1,9 @@
 package aurora.aurora;
 
+import aurora.BungeeMain;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.log.ConciseFormatter;
 import java.util.logging.Logger;
-
-import static aurora.aurora.AuroraBungeeCord.ConsoleFilter;
 
 public class AuroraLoggerBungee {
 
@@ -21,7 +20,8 @@ public class AuroraLoggerBungee {
     }
 
     public static boolean logMessage(String message) {
-        if(!ConsoleFilter) return true;
+        if(!BungeeMain.ConsoleFilter) return true;
+        if(message.contains("Event ConnectionInitEvent(remoteAddress=")) return false;
         return !message.contains(" <-> InitialHandler");
     }
 

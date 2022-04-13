@@ -118,34 +118,16 @@ public class AuroraLoggerSpigot implements Filter {
     }
 
     public static Result logMessage(String message) {
-        if (message.contains("lost connection:") && message.contains("Aurora")) {
+        if (message.contains("lost connection:")) {
             return Result.DENY;
         }
-        if (message.contains("lost connection: Disconnected")) {
-            return Result.DENY;
-        }
-        if (message.contains("lost connection: Timed out")) {
-            return Result.DENY;
-        }
-        if ((message.contains("lost connection: ") || message.contains("Disconnecting")) && (message.contains("Aurora") || message.contains("Disconnected") || message.contains("Internal Exception: java.io.IOException") || message.contains("Took too long to log in") || message.contains("Timed out"))) {
-            return Result.DENY;
-        }
-        if ((message.contains("Disconnecting") || message.contains("lost connection")) && message.contains("Took too long to log in")) {
+        if (message.contains("Disconnecting com.mojang.authlib.GameProfile")) {
             return Result.DENY;
         }
         if (message.contains("UUID of player ") && message.contains(" is ")) {
             return Result.DENY;
         }
-        if (message.contains("lost connection: Internal Exception: io.netty.handler.codec.DecoderException: The received encoded string buffer length is longer than maximum allowed")) {
-            return Result.DENY;
-        }
-        if (message.contains("Could not pass event AsyncPlayerPreLoginEvent to Aurora v1.0-SNAPSHOT")) {
-            return Result.DENY;
-        }
         if(message.contains("An exceptionCaught() event was fired, and it reached at the tail of the pipeline. It usually means the last handler in the pipeline did not handle the exception.")) {
-            return Result.DENY;
-        }
-        if(message.contains("lost connection: Internal Exception:")) {
             return Result.DENY;
         }
         if(message.contains("Selector.select() returned prematurely 512 times in a row; rebuilding selector.")) {

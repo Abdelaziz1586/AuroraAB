@@ -1,6 +1,8 @@
 package aurora.aurora;
 
-import net.md_5.bungee.api.ChatColor;
+import aurora.SpigotMain;
+import aurora.checks.SpigotProxyChecker;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -8,44 +10,26 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.json.JSONObject;
 import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 public final class AuroraSpigot extends JavaPlugin implements Listener {
 
-    HashMap<String, UUID> PlayerDetails = new HashMap<>();
-    HashMap<String, Integer> Tries = new HashMap<>();
-    ArrayList<String> Blocked = new ArrayList<>();
     HashMap<String, JSONObject> IPInfo = new HashMap<>();
-    List<?> BlockedCountries;
+
     List<?> lastBlockedCountries;
 
-    String ReconnectMessage;
     String lastReconnectMessage;
-    String BlockedMessage;
-    String CommandPermission;
-    String ProxyBlockedMessage;
-    String BlockedCountryMessage;
     String lastBlockedMessage;
-    String IllegalCharactersMessage;
     String lastIllegalCharactersMessage;
     String lastCommandPermission;
     String lastProxyBlockedMessage;
     String lastBlockedCountryMessage;
 
-    static boolean ConsoleFilter;
-    boolean ProxyDetection;
     boolean lastConsoleFilter;
     boolean lastProxyDetection;
 
@@ -53,7 +37,7 @@ public final class AuroraSpigot extends JavaPlugin implements Listener {
     public void onEnable() {
         sendConsoleMessage("§eLoading §bAurora");
 
-        getServer().getPluginManager().registerEvents(this, this);
+        Bukkit.getPluginManager().registerEvents(this, this);
         getConfig().options().copyDefaults(true);
         saveDefaultConfig();
 
@@ -78,90 +62,6 @@ public final class AuroraSpigot extends JavaPlugin implements Listener {
         sendConsoleMessage("§bAurora §cHas Been Unloaded");
     }
 
-    @EventHandler
-    public void onConnect(AsyncPlayerPreLoginEvent e) throws IOException {
-        String numRegex   = ".*[0-9].*";
-        String alphaRegex = ".*[A-Z-a-z].*";
-        String IP = e.getAddress().getHostAddress();
-        UUID uuid = e.getUniqueId();
-        String name= e.getName();
-
-        JSONObject object = getIPInfo(IP);
-
-        if (!(name.matches(numRegex) || name.matches(alphaRegex)) || name.contains(" ")) {
-            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, translate(IllegalCharactersMessage));
-        } else {
-            if (!Blocked.contains(IP)) {
-                if (!PlayerDetails.containsKey(IP)) {
-                    e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, translate(ReconnectMessage));
-                    replaceUUID(IP, uuid);
-                } else if (!PlayerDetails.get(IP).equals(uuid)) {
-                    e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, translate(ReconnectMessage));
-                    addTry(IP);
-                    replaceUUID(IP, uuid);
-                } else {
-                    removeTry(IP);
-                    if(BlockedCountries.contains(object.get("country").toString())) {
-                        e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, translate(BlockedCountryMessage));
-                        return;
-                    }
-                    if(ProxyDetection) if(object.get("proxy").equals("true")) e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, translate(ProxyBlockedMessage));
-                }
-            } else {
-                e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, translate(BlockedMessage));
-            }
-        }
-    }
-
-    public void replaceUUID(String IP, UUID uuid) {
-        PlayerDetails.remove(IP);
-        PlayerDetails.put(IP, uuid);
-    }
-
-    public void addTry(String IP) {
-        int tries = 0;
-        if(Tries.containsKey(IP)) tries = Tries.get(IP);
-        tries++;
-        if(tries > 5) {
-            Blocked.add(IP);
-        }
-        Tries.remove(IP);
-        Tries.put(IP, tries);
-    }
-
-    public void removeTry(String IP) {
-        int tries = 0;
-        if(Tries.containsKey(IP)) tries = Tries.get(IP);
-        if (tries > 0) {
-            tries--;
-            Tries.remove(IP);
-            Tries.put(IP, tries);
-        }
-    }
-
-    public JSONObject getIPInfo(String IP) throws IOException {
-        if (IPInfo.containsKey(IP)) return IPInfo.get(IP);
-        InputStream inputStream;
-        URL url = new URL("http://ip-api.com/json/" + IP + "?fields=country,proxy");
-        HttpURLConnection http = (HttpURLConnection) url.openConnection();
-        http.setRequestProperty("Accept", "application/json");
-        int responseCode = http.getResponseCode();
-        if (200 <= responseCode && responseCode <= 299) {
-            inputStream = http.getInputStream();
-        } else {
-            inputStream = http.getErrorStream();
-        }
-        BufferedReader in = new BufferedReader(new InputStreamReader(inputStream));
-        StringBuilder response = new StringBuilder();
-        String currentLine;
-        while ((currentLine = in.readLine()) != null)
-            response.append(currentLine);
-        in.close();
-        JSONObject object = new JSONObject(response.toString());
-        IPInfo.put(IP, object);
-        return object;
-    }
-
     public void sendConsoleMessage(String message) {
         getServer().getConsoleSender().sendMessage(message);
     }
@@ -181,7 +81,7 @@ public final class AuroraSpigot extends JavaPlugin implements Listener {
                 } else {
                     s.sendMessage("§cInvalid arguments (Reload)");
                 }
-            } else if (s.hasPermission(CommandPermission)) {
+            } else if (s.hasPermission(SpigotMain.CommandPermission)) {
                 if(args.length == 1) {
                     if (args[0].equalsIgnoreCase("reload")) {
                         s.sendMessage("§eReloading...");
@@ -198,63 +98,155 @@ public final class AuroraSpigot extends JavaPlugin implements Listener {
         return true;
     }
 
-    public String translate(String text) {
-        return ChatColor.translateAlternateColorCodes('&', text).replace("%nl%", "\n");
+    @EventHandler
+    public void onPlayerPreLogin(AsyncPlayerPreLoginEvent e) throws IOException {
+        String IP = e.getAddress().getHostAddress();
+        String name = e.getName();
+        String numRegex = ".*[0-9].*";
+        String alphaRegex = ".*[A-Z-a-z].*";
+
+        if (!(name.matches(numRegex) || name.matches(alphaRegex)) || name.contains(" ")) {
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, SpigotMain.translate(SpigotMain.IllegalCharactersBlockMessage));
+            return;
+        }
+
+        if (!IPInfo.containsKey(IP)) createDefaultJSONConfig(IP);
+
+        String savedName = getName(IP);
+
+        if (isBlacklisted(IP)) {
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, SpigotMain.translate(SpigotMain.BlockedMessage));
+        } else if (!IPInfo.containsKey(IP)) {
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, SpigotMain.translate(SpigotMain.ReconnectMessage));
+            replaceName(IP, name);
+        } else if (!savedName.equals(name)) {
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, SpigotMain.translate(SpigotMain.ReconnectMessage));
+            replaceName(IP, name);
+            addTry(IP);
+        } else {
+            removeTry(IP);
+            SpigotProxyChecker.saveIPInfo(IP);
+            if (SpigotMain.BlackListCountries.contains(SpigotProxyChecker.getCountry(IP)))
+                e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, SpigotMain.translate(SpigotMain.BlackListCountryMessage));
+            if (SpigotMain.ProxyDetections && SpigotProxyChecker.isProxy(IP))
+                e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_BANNED, SpigotMain.translate(SpigotMain.ProxyBlockMessage));
+        }
+    }
+
+    public void addTry(String IP) {
+        JSONObject jsonObject = IPInfo.get(IP);
+        int i = jsonObject.getInt("Fails");
+        i++;
+        if (i > 3) {
+            blackList(IP);
+        } else {
+            jsonObject.remove("Fails");
+            jsonObject.put("Fails", i);
+            saveJSONInfo(IP, jsonObject);
+        }
+    }
+
+    public void removeTry(String IP) {
+        JSONObject jsonObject = IPInfo.get(IP);
+        int i = jsonObject.getInt("Fails");
+        if (i == 0) return;
+        i--;
+        jsonObject.remove("Fails");
+        jsonObject.put("Fails", i);
+        saveJSONInfo(IP, jsonObject);
+    }
+
+    public void replaceName(String IP, String newName) {
+        if (IPInfo.get(IP).getString("Name").equals(newName)) return;
+        JSONObject jsonObject = IPInfo.get(IP);
+        jsonObject.remove("Name");
+        jsonObject.put("Name", newName);
+        saveJSONInfo(IP, jsonObject);
+    }
+
+    public void blackList(String IP) {
+        if (isBlacklisted(IP)) return;
+        JSONObject jsonObject = IPInfo.get(IP);
+        jsonObject.remove("isBlacklisted");
+        jsonObject.put("isBlacklisted", true);
+        saveJSONInfo(IP, jsonObject);
+    }
+
+    public void createDefaultJSONConfig(String IP) {
+        if (IPInfo.containsKey(IP)) return;
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("isBlacklisted", false);
+        jsonObject.put("Name", "");
+        jsonObject.put("Fails", 0);
+        saveJSONInfo(IP, jsonObject);
+    }
+
+    public void saveJSONInfo(String IP, JSONObject jsonObject) {
+        IPInfo.remove(IP);
+        IPInfo.put(IP, jsonObject);
+    }
+
+    public String getName(String IP) {
+        return IPInfo.get(IP).getString("Name");
+    }
+
+    public boolean isBlacklisted(String IP) {
+        return IPInfo.get(IP).getBoolean("isBlacklisted");
     }
 
     public void reloadPluginConfig() {
         reloadConfig();
-        this.ReconnectMessage = getConfig().getString("reconnect-message");
-        this.BlockedMessage = getConfig().getString("blocked-message");
-        this.IllegalCharactersMessage = getConfig().getString("illegal-characters-message");
-        this.CommandPermission = getConfig().getString("command-permission");
-        this.ProxyBlockedMessage = getConfig().getString("proxy-blocked-message");
-        this.BlockedCountryMessage = getConfig().getString("blocked-country-message");
-        this.BlockedCountries = getConfig().getList("blocked-countries");
-        this.ProxyDetection = getConfig().getBoolean("proxy-detections");
-        ConsoleFilter = getConfig().getBoolean("console-filter");
+        SpigotMain.ReconnectMessage = getConfig().getString("reconnect-message");
+        SpigotMain.BlockedMessage = getConfig().getString("blocked-message");
+        SpigotMain.IllegalCharactersBlockMessage = getConfig().getString("illegal-characters-message");
+        SpigotMain.CommandPermission = getConfig().getString("command-permission");
+        SpigotMain.ProxyBlockMessage = getConfig().getString("proxy-blocked-message");
+        SpigotMain.BlackListCountryMessage = getConfig().getString("blocked-country-message");
+        SpigotMain.BlackListCountries = getConfig().getList("blocked-countries");
+        SpigotMain.ProxyDetections = getConfig().getBoolean("proxy-detections");
+        SpigotMain.ConsoleFilter = getConfig().getBoolean("console-filter");
 
-        if(!this.lastReconnectMessage.equals(ReconnectMessage)) sendConsoleMessage(translate("\n&eChanged reconnect message from\n" + lastReconnectMessage + "\n&eTo\n" + ReconnectMessage));
-        if(!this.lastBlockedMessage.equals(BlockedMessage)) sendConsoleMessage(translate("\n&eChanged blocked message from\n" + lastBlockedMessage + "\n&eTo\n" + BlockedMessage));
-        if(!this.lastIllegalCharactersMessage.equals(IllegalCharactersMessage)) sendConsoleMessage(translate("\n&eChanged illegal characters message from\n" + lastIllegalCharactersMessage + "\n&eTo\n" + IllegalCharactersMessage));
-        if(!this.lastProxyBlockedMessage.equals(ProxyBlockedMessage)) sendConsoleMessage(translate("\n&eChanged proxy blocked message from\n" + lastProxyBlockedMessage + "\n&eTo\n" + ProxyBlockedMessage));
-        if(!this.lastCommandPermission.equals(CommandPermission)) sendConsoleMessage(translate("&eChanged command permission from &c" + lastCommandPermission + " &eTo &a" + CommandPermission));
-        if(!this.lastBlockedCountryMessage.equals(BlockedCountryMessage)) sendConsoleMessage(translate("\n&eChanged country blocked message from\n" + lastBlockedCountryMessage + "\n&eTo\n" + BlockedCountryMessage));
-        if(!this.lastBlockedCountries.equals(BlockedCountries)) sendConsoleMessage(translate("&aUpdated Blocked Country List."));
+        if(!this.lastReconnectMessage.equals(SpigotMain.ReconnectMessage)) sendConsoleMessage(SpigotMain.translate("\n&eChanged reconnect message from\n" + lastReconnectMessage + "\n&eTo\n" + SpigotMain.ReconnectMessage));
+        if(!this.lastBlockedMessage.equals(SpigotMain.BlockedMessage)) sendConsoleMessage(SpigotMain.translate("\n&eChanged blocked message from\n" + lastBlockedMessage + "\n&eTo\n" + SpigotMain.BlockedMessage));
+        if(!this.lastIllegalCharactersMessage.equals(SpigotMain.IllegalCharactersBlockMessage)) sendConsoleMessage(SpigotMain.translate("\n&eChanged illegal characters message from\n" + lastIllegalCharactersMessage + "\n&eTo\n" + SpigotMain.IllegalCharactersBlockMessage));
+        if(!this.lastProxyBlockedMessage.equals(SpigotMain.ProxyBlockMessage)) sendConsoleMessage(SpigotMain.translate("\n&eChanged proxy blocked message from\n" + lastProxyBlockedMessage + "\n&eTo\n" + SpigotMain.ProxyBlockMessage));
+        if(!this.lastCommandPermission.equals(SpigotMain.CommandPermission)) sendConsoleMessage(SpigotMain.translate("&eChanged command permission from &c" + lastCommandPermission + " &eTo &a" + SpigotMain.CommandPermission));
+        if(!this.lastBlockedCountryMessage.equals(SpigotMain.BlackListCountryMessage)) sendConsoleMessage(SpigotMain.translate("\n&eChanged country blocked message from\n" + lastBlockedCountryMessage + "\n&eTo\n" + SpigotMain.BlackListCountryMessage));
+        if(!this.lastBlockedCountries.equals(SpigotMain.BlackListCountries)) sendConsoleMessage(SpigotMain.translate("&aUpdated Blocked Country List."));
 
-        if(!this.lastConsoleFilter == ConsoleFilter) {
+        if(!this.lastConsoleFilter == SpigotMain.ConsoleFilter) {
             String To;
             String From;
-            if(ConsoleFilter) {
+            if(SpigotMain.ConsoleFilter) {
                 To = "&aTrue";
                 From = "&cFalse";
             } else {
                 To = "&cFalse";
                 From = "&aTrue";
             }
-            sendConsoleMessage(translate("&eSwitched Console Filter modes. " + From + " &b-> " + To));
+            sendConsoleMessage(SpigotMain.translate("&eSwitched Console Filter modes. " + From + " &b-> " + To));
         }
-        if(!this.lastProxyDetection == ProxyDetection) {
+        if(!this.lastProxyDetection == SpigotMain.ProxyDetections) {
             String To;
             String From;
-            if(ProxyDetection) {
+            if(SpigotMain.ProxyDetections) {
                 To = "&aTrue";
                 From = "&cFalse";
             } else {
                 To = "&cFalse";
                 From = "&aTrue";
             }
-            sendConsoleMessage(translate("&eSwitched Proxy Detection modes. " + From + " &b-> " + To));
+            sendConsoleMessage(SpigotMain.translate("&eSwitched Proxy Detection modes. " + From + " &b-> " + To));
         }
-        this.lastReconnectMessage = ReconnectMessage;
-        this.lastBlockedMessage = BlockedMessage;
-        this.lastIllegalCharactersMessage = IllegalCharactersMessage;
-        this.lastCommandPermission = CommandPermission;
-        this.lastConsoleFilter = ConsoleFilter;
-        this.lastProxyBlockedMessage = ProxyBlockedMessage;
-        this.lastBlockedCountryMessage = BlockedCountryMessage;
-        this.lastProxyDetection = ProxyDetection;
-        this.lastBlockedCountries = BlockedCountries;
+        this.lastReconnectMessage = SpigotMain.ReconnectMessage;
+        this.lastBlockedMessage = SpigotMain.BlockedMessage;
+        this.lastIllegalCharactersMessage = SpigotMain.IllegalCharactersBlockMessage;
+        this.lastCommandPermission = SpigotMain.CommandPermission;
+        this.lastConsoleFilter = SpigotMain.ConsoleFilter;
+        this.lastProxyBlockedMessage = SpigotMain.ProxyBlockMessage;
+        this.lastBlockedCountryMessage = SpigotMain.BlackListCountryMessage;
+        this.lastProxyDetection = SpigotMain.ProxyDetections;
+        this.lastBlockedCountries = SpigotMain.BlackListCountries;
     }
 
 }
