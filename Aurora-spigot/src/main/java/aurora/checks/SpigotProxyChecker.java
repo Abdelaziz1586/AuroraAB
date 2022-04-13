@@ -15,11 +15,15 @@ public class SpigotProxyChecker {
     static HashMap<String, JSONObject> IPInfo = new HashMap<>();
 
     public static boolean isProxy(String IP) {
-        return IPInfo.get(IP).getBoolean("proxy");
+        if (!IPInfo.get(IP).isNull("country"))
+            return IPInfo.get(IP).getBoolean("proxy");
+        return false;
     }
 
     public static String getCountry(String IP) {
-        return IPInfo.get(IP).getString("country");
+        if (!IPInfo.get(IP).isNull("country"))
+            return IPInfo.get(IP).getString("country");
+        return null;
     }
 
     public static void saveIPInfo(String IP) throws IOException {
@@ -43,5 +47,4 @@ public class SpigotProxyChecker {
         JSONObject object = new JSONObject(response.toString());
         IPInfo.put(IP, object);
     }
-
 }
