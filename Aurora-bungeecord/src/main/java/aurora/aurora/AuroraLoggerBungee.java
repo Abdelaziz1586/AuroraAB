@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 public class AuroraLoggerBungee {
 
     public void registerFilter() {
-        if (ProxyServer.getInstance().getVersion().contains("Waterfall")) {
+        if (!ProxyServer.getInstance().getVersion().contains("BungeeCord")) {
             new AuroraLoggerBungeeLog4J().registerFilter();
         } else {
             Logger logger = ProxyServer.getInstance().getLogger();

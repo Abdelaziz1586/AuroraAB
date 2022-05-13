@@ -3,7 +3,6 @@ package aurora.aurora;
 import aurora.BungeeMain;
 import aurora.checks.BotChecker;
 import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
@@ -12,7 +11,7 @@ import net.md_5.bungee.config.YamlConfiguration;
 import java.io.*;
 import java.util.List;
 
-public final class AuroraBungeeCord extends Plugin implements Listener {
+public final class AuroraBungeeCord extends Plugin {
 
     List<?> lastBlockedCountries;
 
@@ -29,7 +28,6 @@ public final class AuroraBungeeCord extends Plugin implements Listener {
     @Override
     public void onEnable() {
         getLogger().info("&eLoading &bAurora".replace("&", "§"));
-        getProxy().getPluginManager().registerListener(this, this);
         getProxy().getPluginManager().registerListener(this, new BotChecker(this));
         ProxyServer.getInstance().getPluginManager().registerCommand(this, new Commands(this));
         try {
