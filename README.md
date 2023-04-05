@@ -9,6 +9,6 @@ Reasons why to not use it:
 3. The owner himself will not upload any new updates for it.
 
 Thanks for reading,
-Founder and C.E.O of Binkie Projects.
+Founder and C.E.O of PebbleProjects.
 
 - Discontinued since 6/14/2022.
